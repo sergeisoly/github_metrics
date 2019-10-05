@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 Utility for creating a table of statistics for given repository on Github
@@ -15,7 +15,6 @@ Delta metrics:
 - PR closed
 - Issue opened
 - Issue closed
-- Starred
 """
 
 from datetime import datetime
@@ -85,17 +84,18 @@ def snapshot_metric(items_list, date):
 
 def add_count_metric(data, position, dates, items_list, state):
     """
-    Function for evaluation Stars and Forks 
+    Function for evaluation Stars and Forks
     and adding to data dictionary
     :returns data
     """
     total = items_list.totalCount
     dates = dates[1:]
+    length = len(dates)
     date = dates.pop()
     i, j = 0, 0
     for item in items_list.reversed:
         if state_func_at(item, state) < date:
-            data[len(dates)-j+1][position] = total-i
+            data[length-j][position] = total-i
             if not dates:
                 break
             else:
@@ -127,79 +127,63 @@ def main():
         description='Collecting statistics for repository on Github')
 
     parser.add_argument(
-        '--repo_url',
-        '-repo',
-        dest='repo_url',
+        '-repo', '--repo',
+        default='opencv/opencv',
         type=str,
-        default="opencv/opencv",
         help='Url of repository to collect statistics in format: "OWNER/REPOSITORY_NAME"')
     parser.add_argument(
-        '-print',
-        dest='console',
-        type=bool,
-        default=True,
-        help='Flag to print result DataFrame in console')
-    parser.add_argument(
-        '-login',
-        dest='login',
-        type=str,
-        default='sergeisoly',
-        help='Login to access Github statistics of traffic and clones of repository')
-    parser.add_argument(
-        '-password',
-        dest='password',
-        type=str,
-        default='nepisu72',
-        help='Password from Github login')
-    parser.add_argument(
-        '-csv',
-        dest='save_to_csv',
-        type=bool,
-        default=True,
-        help='Flag to save resulting DataFrame in csv format')
-    parser.add_argument(
-        '-path',
-        dest='csv_path',
-        type=str,
-        default=dir_path,
-        help='Path to save result DataFrame in csv format. default is script directory')
-    parser.add_argument(
-        '-start_date',
+        '-start', '--start_date',
         dest='start_date',
         type=str,
         default="2019-01-01",
         help='The date from which to start collecting statistics in format: "YYYY-MM-DD". default="2019-01-01"')
     parser.add_argument(
-        '-end_date',
-        dest='end_date',
+        '-end', '--end_date',
         type=str,
         default="2019-12-01",
         help='The end date of collecting statistics in format: "YYYY-MM-DD". default="2019-12-01"')
+    parser.add_argument(
+        '-p', '--print_table',
+        type=bool,
+        default=True,
+        help='Flag to print result DataFrame in console. default = True')
+    parser.add_argument(
+        '-csv', '--save_to_csv',
+        type=bool,
+        default=True,
+        help='Flag to save resulting DataFrame in csv format. default = True')
+    parser.add_argument(
+        '-path', '--csv_path',
+        type=str,
+        default=dir_path,
+        help='Path to save result DataFrame in csv format. default is script directory')
     args = parser.parse_args()
 
-    start_date = datetime.strptime(args.start_date, "%Y-%m-%d")   
+    start_date = datetime.strptime(args.start_date, "%Y-%m-%d")
     end_date = datetime.strptime(args.end_date, "%Y-%m-%d")
     dates = create_dates_range(start_date, end_date)
 
-    print(f"You should provide access to your Github user account \nbecause of Github API constraints")
+    print("You should provide access to your Github user account because of Github API constraints")
     login = getpass.getpass("Login:")
     passwd = getpass.getpass("Password:")
 
-    start_time = time.time() # start point for evaluating time of running the script
+    # start point for evaluating time of running the script
+    start_time = time.time()
 
     print("Getting access to GitHub...")
     try:
         g = Github(login, passwd)
     except:
         print("Authentification error!")
-    repo = g.get_repo(args.repo_url)
+
+    repo = g.get_repo(args.repo)
     repo_name = repo.name
 
     # Getting pull_requests and issues then
     # to increase efficiency cutting such of them
     # that do not belong to needed dates range
 
-    # TODO find more efficient way to exctract pulls and issues.
+    # TODO find more efficient way to exctract pulls, issues and evaluate its metrics
     # now it takes too much time
     print(f"Getting pull requests from {repo_name} ...")
     pulls = repo.get_pulls(state='all', base='master')
@@ -243,13 +227,13 @@ def main():
                "PR merged", "PR closed", "Issue opened", "Issue closed"]
     df = pd.DataFrame.from_dict(data, orient='index', columns=columns)
 
-    if args.console is True:
+    if args.print_table is True:
         print(df.to_string())
 
     if args.save_to_csv is True:
         file_name = f"{args.csv_path}/Github_stats_{repo_name}.csv"
         print(f"Saving DataFrame to csv file {file_name}")
-        df.to_csv(file_name, index=True)
+        df.to_csv(file_name, index=False)
 
     print(f"Script execution took {(time.time()-start_time)/60:.2f} minutes")
 
