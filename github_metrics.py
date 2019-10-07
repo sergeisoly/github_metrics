@@ -7,7 +7,6 @@ Snapshot metrics:
 - Open PR
 - Open Issues
 - Stars
-- Forks
 
 Delta metrics:
 - PR opened
@@ -66,7 +65,7 @@ def state_func_at(item, state):
         raise ValueError("Only 4 values allowed :'created', 'closed', 'merged', 'starred")
 
 
-def snapshot_metric(items_list, date):
+def snapshot_metric(items_list, date, item_type):
     """
     Evaluates snapshot metric on given date
     """
@@ -75,16 +74,23 @@ def snapshot_metric(items_list, date):
         return None
     for item in items_list:
         if state_func_at(item, "created") <= date:
-            if state_func_at(item, "closed") is None or state_func_at(item, "closed") > date:
-                num += 1
+            if item_type == "pulls":
+                if state_func_at(item, "closed") is None or state_func_at(item, "closed") > date:
+                    if state_func_at(item, "merged") is None or state_func_at(item, "merged") > date:
+                        num += 1
+            elif item_type == "issues":
+                if state_func_at(item, "closed") is None or state_func_at(item, "closed") > date:
+                    num += 1
+                  
+            else: print("Now it possible only for pull and issues")
         else:
             continue
     return num
 
 
-def add_count_metric(data, position, dates, items_list, state):
+def add_stars(data, position, dates, items_list, state):
     """
-    Function for evaluation Stars and Forks
+    Function for evaluation Stars
     and adding to data dictionary
     :returns data
     """
@@ -128,7 +134,6 @@ def main():
 
     parser.add_argument(
         '-repo', '--repo',
-        default='opencv/opencv',
         type=str,
         help='Url of repository to collect statistics in format: "OWNER/REPOSITORY_NAME"')
     parser.add_argument(
@@ -183,23 +188,21 @@ def main():
     # to increase efficiency cutting such of them
     # that do not belong to needed dates range
 
-    # TODO find more efficient way to exctract pulls, issues and evaluate its metrics
-    # now it takes too much time
-    print(f"Getting pull requests from {repo_name} ...")
-    pulls = repo.get_pulls(state='all', base='master')
+    print(f"Getting pull requests from {repo_name} ... ")
+    pulls = repo.get_pulls(state='all')
     pulls = [pr for pr in pulls if pr.closed_at is None or pr.closed_at >= start_date - month]
 
     print(f"Getting issues from {repo_name} ...")
-    issues = repo.get_issues(state='all')
-    issues = [issue for issue in issues if issue.closed_at is None or issue.closed_at >= start_date - month]
 
-    print(f"Getting stargazers of {repo_name} ...")
+    # Only issues that suit dates range and not pull request issues added
+    issues = repo.get_issues(state='all')
+    issues = [issue for issue in issues if issue.pull_request is None
+              and (issue.closed_at is None or issue.closed_at >= start_date - month)]
+
+    print(f"Getting stargazers of {repo_name} ... ")
     stargazers = repo.get_stargazers_with_dates()
 
-    print(f"Getting forks of {repo_name} ...")
-    forks = repo.get_forks()
-
-    print(f"Creating DataFrame of {repo_name} statistics...")
+    print(f"Creating DataFrame of {repo_name} statistics... ", end="\n\n")
 
     # Delta metrics evaluated to month period
     # that was before current date in dates list
@@ -207,10 +210,9 @@ def main():
 
     data = {i:  # cuttind dates for better visibility
                [dates[i].replace(hour=0, minute=0, second=0, microsecond=0),
-                snapshot_metric(pulls, dates[i]),
-                snapshot_metric(issues, dates[i]),
+                snapshot_metric(pulls, dates[i], item_type='pulls'),
+                snapshot_metric(issues, dates[i], item_type='issues'),
                 0,  # place for Stars metric
-                0,  # place for Forks metric
                 delta_metric(pulls, dates[i-1], dates[i], 'created'),
                 delta_metric(pulls, dates[i-1], dates[i], 'merged'),
                 delta_metric(pulls, dates[i-1], dates[i], 'closed'),
@@ -219,23 +221,21 @@ def main():
             for i in range(1, len(dates))}
 
     # Counting Stars
-    data = add_count_metric(data, 3, dates, stargazers, 'starred')
-    # Counting Forks
-    data = add_count_metric(data, 4, dates, forks, 'created')
+    data = add_stars(data, 3, dates, stargazers, 'starred')
 
-    columns = ["Period", "Open PR", "Open issues", "Stars", "Forks", "PR opened",
+    columns = ["Period", "Open PR", "Open issues", "Stars", "PR opened",
                "PR merged", "PR closed", "Issue opened", "Issue closed"]
     df = pd.DataFrame.from_dict(data, orient='index', columns=columns)
 
     if args.print_table is True:
-        print(df.to_string())
+        print(df.to_string(), end="\n\n")
 
     if args.save_to_csv is True:
         file_name = f"{args.csv_path}/Github_stats_{repo_name}.csv"
-        print(f"Saving DataFrame to csv file {file_name}")
+        print(f"Saving DataFrame to csv file {file_name} ")
         df.to_csv(file_name, index=False)
 
-    print(f"Script execution took {(time.time()-start_time)/60:.2f} minutes")
+    print(f"Script execution took {(time.time()-start_time)/60:.2f} minutes ", end="\n\n")
 
 if __name__ == "__main__":
     main()
