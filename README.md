@@ -1,6 +1,18 @@
 # github_metrics
 Collecting and managing github metrics for opencv repositories
 
+Snapshot metrics:
+- Open PR
+- Open Issues
+- Stars
+
+Delta metrics:
+- PR opened
+- PR merged
+- PR closed
+- Issue opened
+- Issue closed
+
 1. github_metrics.py collects data from Github for given repository
 2. run_for_all_repos.sh runs github_metrics.py for opencv repositories
 3. files_to_google_drive.py uploads csv files to Google Drive 
