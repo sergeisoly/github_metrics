@@ -25,5 +25,5 @@ Delta metrics:
    Futher improvements:
  - Github API does not provide access to traffic and views data for more then last 2 weeks
      but somehow it can be done
- - Forks metric was made but in case of some bug removed at the last moment
+ - Forks metric was made but in case of some bug removed at the last moment.
    Soon it can be added
