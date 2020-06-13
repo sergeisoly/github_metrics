@@ -1,4 +1,0 @@
-Github_stats_cvat.csv link: https://drive.google.com/file/d/1cUODEGJjy8C7v-iYrC6fErinr_34D0Od/view?usp=drivesdk
-Github_stats_dldt.csv link: https://drive.google.com/file/d/1CDd7Qj8m7WOTnBifwFNVvIqy1yV-_06Q/view?usp=drivesdk
-Github_stats_open_model_zoo.csv link: https://drive.google.com/file/d/13SXv5nn-S_KgkRiPsVw01UZ0JNYN14f2/view?usp=drivesdk
-Github_stats_openvino_training_extensions.csv link: https://drive.google.com/file/d/19XhBx4XXwKfc1cKE5hn0rRvRm3Wf7F1r/view?usp=drivesdk
